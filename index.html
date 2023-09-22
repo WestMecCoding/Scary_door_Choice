@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scary Door Choice</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Creepster', cursive;
+    }
+
+    p {
+      /* padding: 1vw; */
+      margin: 1vw;
+    }
+
+    div.container {
+      background: linear-gradient(135deg, orange 10%, white 50%);
+      height: 100vh;
+      width: 80vw;
+      margin: auto;
+      text-align: center;
+    }
+
+    #player-submit {
+      height: 5vh;
+      min-width: 1px;
+    }
+
+    div#spider-animation {
+      position: relative;
+      /* border: 1px solid red; */
+      display: inline-block;
+      vertical-align: top;
+    }
+
+    img#spider {
+      position: absolute;
+      top: 0px;
+      left: 0;
+      animation: slideDown 5s ease-in-out infinite;
+    }
+
+    @keyframes slideDown {
+      0% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(50px);
+      }
+
+      100% {
+        transform: translateY(0);
+      }
+    }
+
+    #crypt-keeper {
+      animation: rockingChair 5s ease-in-out infinite;
+    }
+
+    @keyframes rockingChair {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      33% {
+        transform: rotate(-5deg);
+      }
+
+      66% {
+        transform: rotate(5deg);
+      }
+
+      100% {
+        transform: rotate(0deg);
+      }
+    }
+
+    div#game-area {
+      display: none;
+    }
+
+    .fa-check {
+      color: green;
+      display: none
+    }
+
+    div#left-right-row {
+      text-align: center;
+      /* border: 1px solid red */
+    }
+
+    .choice-door {
+      width: 50px;
+      height: 100px;
+      border: 5px solid orange;
+      display: inline-block;
+      background-image: url('./jack-halloween-door.jpg');
+      background-size: contain;
+      background-position: center center;
+      background-repeat: no-repeat;
+      margin:
+        .5vw;
+    }
+
+    .choice-door>p {
+      background-color: orange;
+      margin: 0;
+      text-align: center;
+    }
+
+    button {
+      margin: .5vw;
+    }
+
+    button#play-again {
+      visibility: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- <p>Local storage test:<span id="l-s-test"></span></p>
+      <p>Session Storage test:<span id="s-s-test"></span></p> -->
+    <h1>Welcome Boys and Ghouls!</h1>
+
+    <div id="player-submit"></div>
+    <div id="spider-animation">
+      <img id="spider-web" src="./halloween-spider-web.png" width="50" height="100" alt="spider-web" />
+      <img id="spider" src="./halloween-spider-noweb.png" width="50" height="100" alt="spider" />
+    </div>
+    <img id="crypt-keeper" src="./crypt-keeper.png" width="150" height="150" alt="Crypt_Keeper" />
+    <div id="game-area">
+      <p>
+        There are two doors. Behind one is a monster, behind the other<br />
+        is a prize! Choose wisely!
+      </p>
+      <p>Number of choices this session:<span id="session-choices"></span></p>
+      <p>Correct choices this session:<span id="correct-choices"></span></p>
+      <p>Percentage correct: <span id="choice-percent"></span>%</p>
+      <div id="left-door" class="choice-door">
+        <p>Left<i id="left-check" class="fa-solid fa-check"></i></p>
+      </div>
+      <div id="right-door" class="choice-door">
+        <p>Right<i id="right-check" class="fa-solid fa-check"></i></p>
+      </div>
+      <br />
+      <div id="left-right-row">
+        <button type="button" onclick="makeDecision('left')">Choose Left</button>
+        <button type="button" onclick="makeDecision('right')">Choose Right</button>
+      </div>
+      <button id="play-again" type="button" onclick="playAgain()">Play Again</button>
+
+      <p>You chose: <span id="choice-display"></span></p>
+    </div>
+  </div>
+  <script>
+    // save the URLs of the images we are going to use on the page
+    let yellowMonsterSrc = 'https://static.vecteezy.com/system/resources/previews/000/373/168/non_2x/silly-monster-creature-cartoon-vector-illustration.jpg';
+    let greenMonsterSrc = 'https://content.mycutegraphics.com/graphics/monster/silly-monster.png';
+    let treasureChestSrc = 'https://i.etsystatic.com/42692457/r/il/0d1d44/5059346399/il_1588xN.5059346399_nbcl.jpg';
+
+    // declare variables to be used
+    let choiceResult;
+    // CONST section
+    // In the CONST section we will set the elements to a variable name
+    const playerSubmitDiv = document.getElementById('player-submit');
+    const playerNameInput = '<div><input id="name-input" type="text" placeholder="enter your name" /><button type="button" onclick="submitPlayerName()">Submit</button></div>';
+    const playerWelcomeH2 = '<h2 id="player-welcome-message">Hello <span id="player-name"></span></h2>';
+    const choiceDisplay = document.getElementById('choice-display');
+    const gameArea = document.getElementById('game-area');
+
+    // the check playerName function checks if the playerName
+    // exists in the session storage or if it's null
+    // if it's null the player name input will display
+    // if there is a player name the game area will display
+    // along with a player greeting
+    function checkPlayerName() {
+      // set the playerName variable to the session storage value of playerName
+      const playerName = sessionStorage.getItem('playerName');
+      // if there is a player name in the session display the
+      // player greeting and the game area
+      if (playerName != null) {
+        console.log(playerName);
+        playerSubmitDiv.innerHTML = playerWelcomeH2;
+
+        document.getElementById('player-name').textContent = playerName;
+        gameArea.style.display = 'block';
+        // playerWelcomeH2.style.display = 'block';
+      } else {
+        playerSubmitDiv.innerHTML = playerNameInput;
+        // playerWelcomeH2.style.display = 'none';
+        // playerSubmitDiv.style.display = 'block';
+      }
+    }
+
+    // the checkGameStats() function will see if the player
+    // has made any decisions already that have been stored
+    // in session storage and if it hasn't it will set the
+    // session storage to 0
+    function checkGameStats() {
+      const sessionChoices = sessionStorage.getItem('sessionChoices');
+      const correctChoices = sessionStorage.getItem('correctChoices');
+      // console.log(sessionChoices);
+      if (sessionChoices != null) {
+        document.getElementById('session-choices').textContent = sessionChoices;
+      } else {
+        sessionStorage.setItem('sessionChoices', '0');
+        document.getElementById('session-choices').textContent = JSON.parse(sessionChoices);
+      }
+
+      if (correctChoices != null) {
+        console.log('correct choices ' + sessionStorage.getItem('correctChoices'));
+        document.getElementById('correct-choices').textContent = correctChoices;
+      } else {
+        sessionStorage.setItem('correctChoices', '0');
+      }
+      if (sessionChoices != null && sessionChoices != '0') {
+        document.getElementById('choice-percent').textContent = ((JSON.parse(correctChoices) / JSON.parse(sessionChoices)) * 100).toFixed(2);
+      }
+    }
+
+    // the makeDecision function takes the player choice
+    // and checks if the door you they chose has the
+    // treasure or the monster behind using Math.random()
+    // then the correct picture for each door is displayed
+    // and the player is informed if they made the right choice
+    function makeDecision(choice) {
+      if (choice === 'left') {
+        choiceDisplay.textContent = 'Left';
+      } else {
+        choiceDisplay.textContent = 'Right';
+      }
+
+      let monsterDoor = Math.floor(Math.random() * 2) + 1;
+      // console.log(monsterDoor);
+
+      if (monsterDoor === 1) {
+        if (choice === 'left') {
+          choiceDisplay.textContent += ' YOU LOSE';
+          choiceResult = 'lose';
+          // document.getElementById('left-door').textContent += 'X';
+          // document.getElementById('left-door').style.color = 'red';
+        } else {
+          choiceDisplay.textContent += ' YOU WIN';
+          choiceResult = 'win';
+          document.getElementById('right-check').style.display = 'inline';
+        }
+        document.querySelector('#left-door').style.backgroundImage = 'url(' + greenMonsterSrc + ')';
+        document.querySelector('#right-door').style.backgroundImage = 'url(' + treasureChestSrc + ')';
+      } else {
+        if (choice === 'right') {
+          choiceDisplay.textContent += ' YOU LOSE';
+          choiceResult = 'lose';
+        } else {
+          choiceDisplay.textContent += ' YOU WIN';
+          choiceResult = 'win';
+          document.getElementById('left-check').style.display = 'inline';
+        }
+        document.querySelector('#right-door').style.backgroundImage = 'url(' + greenMonsterSrc + ')';
+        document.querySelector('#left-door').style.backgroundImage = 'url(' + treasureChestSrc + ')';
+      }
+      document.getElementById('play-again').style.visibility = 'visible';
+      document.getElementById('left-right-row').style.visibility = 'hidden';
+
+      // increment the number of sessionChoices
+      let sessionChoices = JSON.parse(sessionStorage.getItem('sessionChoices')) || 0;
+      sessionChoices++;
+      console.log(sessionChoices);
+      sessionStorage.setItem('sessionChoices', JSON.stringify(sessionChoices));
+      console.log('session storage' + sessionStorage.getItem('sessionChoices'));
+
+      // check if need to increment correct choices or not
+      if (choiceResult === 'win') {
+        let correctChoices = JSON.parse(sessionStorage.getItem('correctChoices'));
+        correctChoices++;
+        sessionStorage.setItem('correctChoices', JSON.stringify(correctChoices));
+      }
+      checkGameStats();
+    }
+
+    // the submitPlayerName function sets the value of the
+    // text input to a variable and then stores that variable
+    // in session storage as playerName.
+    // It then calls back the checkPlayerName() function
+    // to display the game area and player welcome message.
+    function submitPlayerName() {
+      const nameValue = document.getElementById('name-input').value;
+
+      sessionStorage.setItem('playerName', nameValue);
+
+      checkPlayerName();
+    }
+
+    // the playAgain() function will do the following things:
+    // 1. select all of the div.choice-door and reset the
+    // backgroud image to the halloween-door image.
+    // 2. Make the left and right buttons visible
+    // 3. Hide the play again button
+    // 4. Clear out the textContent of the choice display paragraph
+    function playAgain() {
+      // 1. select all of the div.choice doors
+      let choiceDoors = document.querySelectorAll('.choice-door');
+      // reset their background images to halloween-door
+      choiceDoors.forEach((item) => {
+        item.style.backgroundImage = "url('./jack-halloween-door.jpg')";
+      });
+      // 2. Make the left and right buttons visible by setting the visibility of their parent container
+      document.getElementById('left-right-row').style.visibility = 'visible';
+      // 3. Hide the play again button by making its visibility hidden
+      document.getElementById('play-again').style.visibility = 'hidden';
+      // 4. Clear out the text content of the choice display paragraph
+      document.getElementById('choice-display').textContent = '';
+      // 5. make the green checks invisible
+      const faChecks = document.querySelectorAll('.fa-check');
+      faChecks.forEach((item) => {
+        item.style.display = 'none';
+      });
+    }
+
+    // the window.onload method will allow us to execute statements
+    // when the window loads
+    window.onload = function () {
+      // We will execute the checkPlayerName function when the window is loaded
+      checkPlayerName();
+      checkGameStats();
+    };
+  </script>
+</body>
+
+</html>
